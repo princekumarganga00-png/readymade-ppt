@@ -9,11 +9,9 @@ app.use(cors());
 
 app.use(express.static(__dirname));
 
-// Database Connection (Updated with new password)
-mongoose.connect('mongodb+srv://princekumarganga00_db_user:XLrP1mDvRl8wx2iZ@cluster0.czgcm2j.mongodb.net/?appName=Cluster0', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('Readymade PPT Database Connected Successfully!'))
+// Database Connection with correct password & options
+mongoose.connect('mongodb+srv://princekumarganga00_db_user:XLrP1mDvRl8wx2iZ@cluster0.czgcm2j.mongodb.net/?appName=Cluster0')
+.then(() => console.log('Readymade PPT Database Connected Successfully!'))
   .catch(err => console.log('Database Connection Error: ', err));
 
 // User Schema with Password & Device Locking
@@ -47,7 +45,6 @@ app.post('/api/user/register', async (req, res) => {
       return res.status(400).json({ success: false, message: "Mobile, Password and Device ID are required!" });
     }
 
-    // Check device restriction
     let existingDeviceUser = await User.findOne({ deviceId });
     if (existingDeviceUser) {
       return res.status(403).json({ 
@@ -62,11 +59,11 @@ app.post('/api/user/register', async (req, res) => {
     }
 
     let expiry = new Date();
-    expiry.setDate(expiry.getDate() + 60); // 60 Days Trial
+    expiry.setDate(expiry.getDate() + 60);
 
     let user = new User({
       name, mobile, password, email, district, state, deviceId,
-      planName: '60 Days Free Trial',
+      planName: '60 Days FreeTrial',
       planExpiry: expiry
     });
     await user.save();
@@ -90,7 +87,6 @@ app.post('/api/user/login', async (req, res) => {
       return res.status(401).json({ success: false, message: "गलत पासवर्ड! कृपया सही पासवर्ड दर्ज करें।" });
     }
 
-    // Check Device ID mapping
     if (user.deviceId && user.deviceId !== deviceId) {
       return res.status(403).json({ 
         success: false, 
