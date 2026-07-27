@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>रेडीमेड PPT - Login & Plans</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+      }
+    </script>
+    <style>
+        body { background: #0f172a; color: #fff; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h2 { text-align: center; color: #38bdf8; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 10px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; background: #0284c7; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0ea5e9; }
+        .plans-box { display: none; }
+        .plan-item { background: #0f172a; border: 1px solid #38bdf8; padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <!-- Registration / Login Form -->
+    <div id="loginForm">
+        <h2>📂 रेडीमेड PPT ऐप</h2>
+        <input type="text" id="name" placeholder="पूरा नाम दर्ज करें" required>
+        <input type="text" id="mobile" placeholder="मोबाइल नंबर (OTP के लिए)" required>
+        <input type="email" id="email" placeholder="ईमेल आईडी">
+        <input type="text" id="district" placeholder="जिला (District)">
+        <input type="text" id="state" placeholder="राज्य (State)">
+        <button onclick="registerUser()">लॉगिन / रजिस्टर करें</button>
+    </div>
+
+    <!-- Pricing Plans Dashboard (After Login) -->
+    <div id="plansDashboard" class="plans-box">
+        <h2>🚀 सब्सक्रिप्शन प्लान चुनें</h2>
+        <div id="userWelcome" style="font-size: 13px; color: #94a3b8; margin-bottom: 15px; text-align: center;"></div>
+        
+        <div class="plan-item">
+            <h3>🎁 7 दिन फ्री ट्रायल</h3>
+            <p>बिल्कुल मुफ्त (सभी फीचर्स)</p>
+        </div>
+        <div class="plan-item">
+            <h3>⭐ ₹49 प्लान</h3>
+            <p>15 दिन | रोज 2 घंटे यूज़</p>
+            <button onclick="alert('QR Code से पेमेंट करें!')">खरीदें</button>
+        </div>
+        <div class="plan-item">
+            <h3>🔥 ₹99 प्लान</h3>
+            <p>15 दिन | रोज 4 घंटे यूज़</p>
+            <button onclick="alert('QR Code से पेमेंट करें!')">खरीदें</button>
+        </div>
+        <div class="plan-item">
+            <h3>💎 ₹149 प्लान</h3>
+            <p>15 दिन | रोज 10 घंटे यूज़</p>
+            <button onclick="alert('QR Code से पेमेंट करें!')">खरीदें</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let deviceId = localStorage.getItem('ppt_device_id');
+    if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).substring(2) + Date.now();
+        localStorage.setItem('ppt_device_id', deviceId);
+    }
+
+    async function registerUser() {
+        const name = document.getElementById('name').value;
+        const mobile = document.getElementById('mobile').value;
+        const email = document.getElementById('email').value;
+        const district = document.getElementById('district').value;
+        const state = document.getElementById('state').value;
+
+        if(!name || !mobile) {
+            alert("कृपया नाम और मोबाइल नंबर भरें!");
+            return;
+        }
+
+        let response = await fetch('/api/user/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, mobile, email, district, state, deviceId })
+        });
+
+        let result = await response.json();
+        if(result.success) {
+            alert("लॉगिन सफल रहा!");
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('plansDashboard').style.display = 'block';
+            document.getElementById('userWelcome').innerText = `स्वागत है, ${result.user.name} (${result.user.district}, ${result.user.state})`;
+        } else {
+            alert(result.message);
+        }
+    }
+</script>
+
+</body>
+</html>
