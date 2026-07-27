@@ -19,6 +19,9 @@
         button:hover { background: #0ea5e9; }
         .plans-box { display: none; }
         .plan-item { background: #0f172a; border: 1px solid #38bdf8; padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #1e293b; padding: 20px; border-radius: 10px; text-align: center; max-width: 320px; width: 90%; border: 1px solid #38bdf8; }
+        .modal-content img { width: 220px; height: 220px; margin: 15px auto; background: #fff; border-radius: 6px; object-fit: contain; display: block; }
     </style>
 </head>
 <body>
@@ -28,7 +31,7 @@
     <div id="loginForm">
         <h2>📂 रेडीमेड PPT ऐप</h2>
         <input type="text" id="name" placeholder="पूरा नाम दर्ज करें" required>
-        <input type="text" id="mobile" placeholder="मोबाइल नंबर (OTP के लिए)" required>
+        <input type="text" id="mobile" placeholder="मोबाइल नंबर दर्ज करें" required>
         <input type="email" id="email" placeholder="ईमेल आईडी">
         <input type="text" id="district" placeholder="जिला (District)">
         <input type="text" id="state" placeholder="राज्य (State)">
@@ -41,24 +44,36 @@
         <div id="userWelcome" style="font-size: 13px; color: #94a3b8; margin-bottom: 15px; text-align: center;"></div>
         
         <div class="plan-item">
-            <h3>🎁 7 दिन फ्री ट्रायल</h3>
+            <h3>🎁 60 दिन फ्री ट्रायल</h3>
             <p>बिल्कुल मुफ्त (सभी फीचर्स)</p>
+            <button onclick="startFreeTrial()" style="background: #16a34a;">तुरंत शुरू करें</button>
         </div>
         <div class="plan-item">
             <h3>⭐ ₹49 प्लान</h3>
             <p>15 दिन | रोज 2 घंटे यूज़</p>
-            <button onclick="alert('QR Code से पेमेंट करें!')">खरीदें</button>
+            <button onclick="openPayment('₹49 प्लान')">खरीदें</button>
         </div>
         <div class="plan-item">
             <h3>🔥 ₹99 प्लान</h3>
             <p>15 दिन | रोज 4 घंटे यूज़</p>
-            <button onclick="alert('QR Code से पेमेंट करें!')">खरीदें</button>
+            <button onclick="openPayment('₹99 प्लान')">खरीदें</button>
         </div>
         <div class="plan-item">
             <h3>💎 ₹149 प्लान</h3>
             <p>15 दिन | रोज 10 घंटे यूज़</p>
-            <button onclick="alert('QR Code से पेमेंट करें!')">खरीदें</button>
+            <button onclick="openPayment('₹149 प्लान')">खरीदें</button>
         </div>
+    </div>
+</div>
+
+<!-- Payment Modal (QR Code) -->
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <h3 id="planTitle" style="color: #38bdf8; margin-top:0;">Payment</h3>
+        <p style="font-size: 13px; color: #cbd5e1;">नीचे दिए गए QR Code को Scan करके payment करें:</p>
+        <img id="qrImage" src="/qr.jpg" alt="Payment QR Code">
+        <p style="font-size: 11px; color: #94a3b8;">पेमेंट करने के बाद स्क्रीनशॉट WhatsApp पर भेजें।</p>
+        <button onclick="closePayment()" style="background: #dc2626; margin-top: 5px;">बंद करें</button>
     </div>
 </div>
 
@@ -81,21 +96,52 @@
             return;
         }
 
-        let response = await fetch('/api/user/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, mobile, email, district, state, deviceId })
-        });
+        try {
+            let response = await fetch('/api/user/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, mobile, email, district, state, deviceId })
+            });
 
-        let result = await response.json();
-        if(result.success) {
-            alert("लॉगिन सफल रहा!");
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('plansDashboard').style.display = 'block';
-            document.getElementById('userWelcome').innerText = `स्वागत है, ${result.user.name} (${result.user.district}, ${result.user.state})`;
-        } else {
-            alert(result.message);
+            let result = await response.json();
+            if(result.success) {
+                alert("लॉगिन सफल रहा!");
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('plansDashboard').style.display = 'block';
+                document.getElementById('userWelcome').innerText = `स्वागत है, ${result.user.name} (${result.user.district || ''}, ${result.user.state || ''})`;
+            } else {
+                alert(result.message);
+            }
+        } catch(e) {
+            alert("Connection Error! Please try again.");
         }
+    }
+
+    function startFreeTrial() {
+        alert("आपका 60 दिन का फ्री ट्रायल एक्टिव है!");
+    }
+
+    async function openPayment(planName) {
+        document.getElementById('planTitle').innerText = planName;
+        
+        // Backend se QR code fetch karna
+        try {
+            let res = await fetch('/api/settings');
+            let data = await res.json();
+            if(data.success && data.setting.qrCodeUrl) {
+                document.getElementById('qrImage').src = data.setting.qrCodeUrl;
+            } else {
+                document.getElementById('qrImage').src = "/qr.jpg";
+            }
+        } catch(e) {
+            document.getElementById('qrImage').src = "/qr.jpg";
+        }
+
+        document.getElementById('paymentModal').style.display = 'flex';
+    }
+
+    function closePayment() {
+        document.getElementById('paymentModal').style.display = 'none';
     }
 </script>
 
