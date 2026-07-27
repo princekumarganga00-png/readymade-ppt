@@ -1,12 +1,16 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Aapke naye password (Prince_2008) ke sath connection string
+// Static files (Jaise index.html) ko serve karne ke liye
+app.use(express.static(__dirname));
+
+// Database Connection
 mongoose.connect('mongodb+srv://princekumarganga00_db_user:Prince_2008@cluster0.czgcm2j.mongodb.net/?appName=Cluster0', {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -25,12 +29,6 @@ const UserSchema = new mongoose.Schema({
   dailyHoursLimit: Number
 });
 const User = mongoose.model('User', UserSchema);
-
-const SettingSchema = new mongoose.Schema({
-  qrCodeUrl: String,
-  promoText: String
-});
-const Setting = mongoose.model('Setting', SettingSchema);
 
 app.post('/api/user/login', async (req, res) => {
   const { name, mobile, email, district, state, deviceId } = req.body;
