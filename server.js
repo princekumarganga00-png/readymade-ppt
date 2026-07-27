@@ -16,10 +16,11 @@ mongoose.connect('mongodb+srv://princekumarganga00_db_user:Prince_2008@cluster0.
 }).then(() => console.log('Readymade PPT Database Connected Successfully!'))
   .catch(err => console.log('Database Connection Error: ', err));
 
-// User Schema
+// User Schema with Password & Device Locking
 const UserSchema = new mongoose.Schema({
   name: String,
   mobile: { type: String, unique: true },
+  password: { type: String, required: true },
   email: String,
   district: String,
   state: String,
@@ -38,48 +39,70 @@ const SettingSchema = new mongoose.Schema({
 });
 const Setting = mongoose.model('Setting', SettingSchema);
 
-// Secure Login API with Device Lock
-app.post('/api/user/login', async (req, res) => {
-  const { name, mobile, email, district, state, deviceId } = req.body;
+// 1. Register API (New User)
+app.post('/api/user/register', async (req, res) => {
+  const { name, mobile, password, email, district, state, deviceId } = req.body;
   try {
-    if (!mobile || !deviceId) {
-      return res.status(400).json({ success: false, message: "Mobile number and Device ID are required!" });
+    if (!mobile || !password || !deviceId) {
+      return res.status(400).json({ success: false, message: "Mobile, Password and Device ID are required!" });
     }
 
+    // Check device restriction
     let existingDeviceUser = await User.findOne({ deviceId });
-    if (existingDeviceUser && existingDeviceUser.mobile !== mobile) {
+    if (existingDeviceUser) {
       return res.status(403).json({ 
         success: false, 
-        message: "सुरक्षा प्रतिबंध: इस डिवाइस पर पहले ही दूसरा नंबर रजिस्टर किया जा चुका है! आप एक ही डिवाइस पर बार-बार नंबर बदलकर नया ट्रायल नहीं ले सकते।" 
+        message: "सुरक्षा प्रतिबंध: इस डिवाइस पर पहले ही खाता बनाया जा चुका है!" 
       });
     }
 
+    let existingUser = await User.findOne({ mobile });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "यह मोबाइल नंबर पहले से रजिस्टर्ड है! कृपया 'Already User' से लॉगिन करें।" });
+    }
+
+    let expiry = new Date();
+    expiry.setDate(expiry.getDate() + 60); // 60 Days Trial
+
+    let user = new User({
+      name, mobile, password, email, district, state, deviceId,
+      planName: '60 Days Free Trial',
+      planExpiry: expiry
+    });
+    await user.save();
+
+    res.json({ success: true, message: "Registration Successful", user });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. Login API (Already User)
+app.post('/api/user/login', async (req, res) => {
+  const { mobile, password, deviceId } = req.body;
+  try {
     let user = await User.findOne({ mobile });
-
     if (!user) {
-      let expiry = new Date();
-      expiry.setDate(expiry.getDate() + 60);
+      return res.status(404).json({ success: false, message: "यह मोबाइल नंबर रजिस्टर्ड नहीं है! पहले रजिस्टर करें।" });
+    }
 
-      user = new User({
-        name, mobile, email, district, state, deviceId,
-        planName: '60 Days Free Trial',
-        planExpiry: expiry
+    if (user.password !== password) {
+      return res.status(401).json({ success: false, message: "गलत पासवर्ड! कृपया सही पासवर्ड दर्ज करें।" });
+    }
+
+    // Check Device ID mapping
+    if (user.deviceId && user.deviceId !== deviceId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "सुरक्षा कारणवश यह खाता किसी अन्य डिवाइस पर रजिस्टर्ड है!" 
       });
-      await user.save();
-    } else {
-      if (user.deviceId && user.deviceId !== deviceId) {
-        return res.status(403).json({ 
-          success: false, 
-          message: "सुरक्षा कारणवश यह मोबाइल नंबर किसी अन्य डिवाइस पर रजिस्टर्ड है! एक नंबर से दूसरा डिवाइस नहीं चल सकता।" 
-        });
-      }
     }
 
     if (new Date() > new Date(user.planExpiry)) {
       return res.status(403).json({ 
         success: false, 
         expired: true,
-        message: "आपका प्लान/ट्रायल समाप्त हो चुका है! आगे उपयोग करने के लिए कृपया सब्सक्रिप्शन प्लान खरीदें।" 
+        message: "आपका प्लान समाप्त हो चुका है! कृपया सब्सक्रिप्शन प्लान खरीदें।" 
       });
     }
 

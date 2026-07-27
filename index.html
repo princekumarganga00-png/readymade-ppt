@@ -14,10 +14,12 @@
         body { background: #0f172a; color: #fff; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: #1e293b; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         h2 { text-align: center; color: #38bdf8; margin-bottom: 20px; }
-        input, select { width: 100%; padding: 10px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; box-sizing: border-box; }
+        input { width: 100%; padding: 10px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; box-sizing: border-box; }
         button { width: 100%; background: #0284c7; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0ea5e9; }
-        .plans-box { display: none; }
+        .toggle-btn { background: transparent; color: #38bdf8; border: none; cursor: pointer; margin-top: 15px; width: 100%; font-size: 13px; text-decoration: underline; }
+        .form-box, .plans-box { display: none; }
+        .active-form { display: block; }
         .plan-item { background: #0f172a; border: 1px solid #38bdf8; padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #1e293b; padding: 20px; border-radius: 10px; text-align: center; max-width: 320px; width: 90%; border: 1px solid #38bdf8; }
@@ -27,20 +29,33 @@
 <body>
 
 <div class="card">
-    <!-- Registration / Login Form -->
-    <div id="loginForm">
-        <h2>📂 रेडीमेड PPT ऐप</h2>
-        <input type="text" id="name" placeholder="पूरा नाम दर्ज करें" required>
-        <input type="text" id="mobile" placeholder="मोबाइल नंबर दर्ज करें" required>
-        <input type="email" id="email" placeholder="ईमेल आईडी">
-        <input type="text" id="district" placeholder="जिला (District)">
-        <input type="text" id="state" placeholder="राज्य (State)">
-        <button onclick="registerUser()">लॉगिन / रजिस्टर करें</button>
+    <h2>📂 रेडीमेड PPT ऐप</h2>
+
+    <!-- Register Form (New User) -->
+    <div id="registerForm" class="form-box active-form">
+        <h3 style="text-align: center; color: #94a3b8; font-size: 15px; margin-bottom: 10px;">नया खाता बनाएँ (New User)</h3>
+        <input type="text" id="regName" placeholder="पूरा नाम दर्ज करें" required>
+        <input type="text" id="regMobile" placeholder="मोबाइल नंबर दर्ज करें" required>
+        <input type="password" id="regPassword" placeholder="पासवर्ड बनाएँ (Password)" required>
+        <input type="email" id="regEmail" placeholder="ईमेल आईडी (Optional)">
+        <input type="text" id="regDistrict" placeholder="जिला (District)">
+        <input type="text" id="regState" placeholder="राज्य (State)">
+        <button onclick="registerUser()">रजिस्टर करें</button>
+        <button class="toggle-btn" onclick="switchForm('login')">पहले से खाता है? लॉगिन करें (Already User)</button>
+    </div>
+
+    <!-- Login Form (Already User) -->
+    <div id="loginForm" class="form-box">
+        <h3 style="text-align: center; color: #94a3b8; font-size: 15px; margin-bottom: 10px;">लॉगिन करें (Already User)</h3>
+        <input type="text" id="logMobile" placeholder="मोबाइल नंबर दर्ज करें" required>
+        <input type="password" id="logPassword" placeholder="अपना पासवर्ड दर्ज करें" required>
+        <button onclick="loginUser()">लॉगिन करें</button>
+        <button class="toggle-btn" onclick="switchForm('register')">नया यूजर हैं? रजिस्टर करें</button>
     </div>
 
     <!-- Pricing Plans Dashboard (After Login) -->
     <div id="plansDashboard" class="plans-box">
-        <h2>🚀 सब्सक्रिप्शन प्लान चुनें</h2>
+        <h3 style="text-align: center; color: #38bdf8; margin-bottom: 10px;">🚀 सब्सक्रिप्शन प्लान चुनें</h3>
         <div id="userWelcome" style="font-size: 13px; color: #94a3b8; margin-bottom: 15px; text-align: center;"></div>
         
         <div class="plan-item">
@@ -63,6 +78,7 @@
             <p>15 दिन | रोज 10 घंटे यूज़</p>
             <button onclick="openPayment('₹149 प्लान')">खरीदें</button>
         </div>
+        <button onclick="logout()" style="background: #dc2626; margin-top: 15px;">Logout / बाहर निकलें</button>
     </div>
 </div>
 
@@ -84,15 +100,68 @@
         localStorage.setItem('ppt_device_id', deviceId);
     }
 
-    async function registerUser() {
-        const name = document.getElementById('name').value;
-        const mobile = document.getElementById('mobile').value;
-        const email = document.getElementById('email').value;
-        const district = document.getElementById('district').value;
-        const state = document.getElementById('state').value;
+    // Check if already logged in via localStorage
+    window.onload = function() {
+        let savedMobile = localStorage.getItem('ppt_user_mobile');
+        if(savedMobile) {
+            document.getElementById('registerForm').classList.remove('active-form');
+            document.getElementById('loginForm').classList.remove('active-form');
+            document.getElementById('plansDashboard').style.display = 'block';
+            document.getElementById('userWelcome').innerText = `स्वागत है, मोबाइल: ${savedMobile}`;
+        }
+    }
 
-        if(!name || !mobile) {
-            alert("कृपया नाम और मोबाइल नंबर भरें!");
+    function switchForm(type) {
+        if(type === 'login') {
+            document.getElementById('registerForm').classList.remove('active-form');
+            document.getElementById('loginForm').classList.add('active-form');
+        } else {
+            document.getElementById('loginForm').classList.remove('active-form');
+            document.getElementById('registerForm').classList.add('active-form');
+        }
+    }
+
+    async function registerUser() {
+        const name = document.getElementById('regName').value;
+        const mobile = document.getElementById('regMobile').value;
+        const password = document.getElementById('regPassword').value;
+        const email = document.getElementById('regEmail').value;
+        const district = document.getElementById('regDistrict').value;
+        const state = document.getElementById('regState').value;
+
+        if(!name || !mobile || !password) {
+            alert("कृपया नाम, मोबाइल नंबर और पासवर्ड भरें!");
+            return;
+        }
+
+        try {
+            let response = await fetch('/api/user/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, mobile, password, email, district, state, deviceId })
+            });
+
+            let result = await response.json();
+            if(result.success) {
+                alert("रгистраशन सफल रहा!");
+                localStorage.setItem('ppt_user_mobile', mobile);
+                document.getElementById('registerForm').classList.remove('active-form');
+                document.getElementById('plansDashboard').style.display = 'block';
+                document.getElementById('userWelcome').innerText = `स्वागत है, ${result.user.name} (${result.user.district || ''}, ${result.user.state || ''})`;
+            } else {
+                alert(result.message);
+            }
+        } catch(e) {
+            alert("Connection Error!");
+        }
+    }
+
+    async function loginUser() {
+        const mobile = document.getElementById('logMobile').value;
+        const password = document.getElementById('logPassword').value;
+
+        if(!mobile || !password) {
+            alert("कृपया मोबाइल नंबर और पासवर्ड भरें!");
             return;
         }
 
@@ -100,21 +169,27 @@
             let response = await fetch('/api/user/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, mobile, email, district, state, deviceId })
+                body: JSON.stringify({ mobile, password, deviceId })
             });
 
             let result = await response.json();
             if(result.success) {
                 alert("लॉगिन सफल रहा!");
-                document.getElementById('loginForm').style.display = 'none';
+                localStorage.setItem('ppt_user_mobile', mobile);
+                document.getElementById('loginForm').classList.remove('active-form');
                 document.getElementById('plansDashboard').style.display = 'block';
                 document.getElementById('userWelcome').innerText = `स्वागत है, ${result.user.name} (${result.user.district || ''}, ${result.user.state || ''})`;
             } else {
                 alert(result.message);
             }
         } catch(e) {
-            alert("Connection Error! Please try again.");
+            alert("Connection Error!");
         }
+    }
+
+    function logout() {
+        localStorage.removeItem('ppt_user_mobile');
+        location.reload();
     }
 
     function startFreeTrial() {
@@ -123,8 +198,6 @@
 
     async function openPayment(planName) {
         document.getElementById('planTitle').innerText = planName;
-        
-        // Backend se QR code fetch karna
         try {
             let res = await fetch('/api/settings');
             let data = await res.json();
@@ -136,7 +209,6 @@
         } catch(e) {
             document.getElementById('qrImage').src = "/qr.jpg";
         }
-
         document.getElementById('paymentModal').style.display = 'flex';
     }
 
