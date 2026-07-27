@@ -23,14 +23,13 @@ const UserSchema = new mongoose.Schema({
   email: String,
   district: String,
   state: String,
-  deviceId: String,
-  planName: { type: String, default: '7 Days Free Trial' },
-  planExpiry: Date,
-  dailyHoursLimit: Number
+  deviceId: { type: String, unique: true },
+  planName: { type: String, default: '60 Days Free Trial' },
+  planExpiry: Date
 });
 const User = mongoose.model('User', UserSchema);
 
-// Settings Schema (QR Code, Plans & Promotion Banner)
+// Settings Schema
 const SettingSchema = new mongoose.Schema({
   key: { type: String, unique: true },
   qrCodeUrl: String,
@@ -39,31 +38,51 @@ const SettingSchema = new mongoose.Schema({
 });
 const Setting = mongoose.model('Setting', SettingSchema);
 
-// Login API
+// Secure Login API with Device Lock
 app.post('/api/user/login', async (req, res) => {
   const { name, mobile, email, district, state, deviceId } = req.body;
   try {
+    if (!mobile || !deviceId) {
+      return res.status(400).json({ success: false, message: "Mobile number and Device ID are required!" });
+    }
+
+    let existingDeviceUser = await User.findOne({ deviceId });
+    if (existingDeviceUser && existingDeviceUser.mobile !== mobile) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "सुरक्षा प्रतिबंध: इस डिवाइस पर पहले ही दूसरा नंबर रजिस्टर किया जा चुका है! आप एक ही डिवाइस पर बार-बार नंबर बदलकर नया ट्रायल नहीं ले सकते।" 
+      });
+    }
+
     let user = await User.findOne({ mobile });
 
     if (!user) {
       let expiry = new Date();
-      expiry.setDate(expiry.getDate() + 7);
+      expiry.setDate(expiry.getDate() + 60);
 
       user = new User({
         name, mobile, email, district, state, deviceId,
-        planName: '7 Days Free Trial',
-        planExpiry: expiry,
-        dailyHoursLimit: 24
+        planName: '60 Days Free Trial',
+        planExpiry: expiry
       });
       await user.save();
     } else {
       if (user.deviceId && user.deviceId !== deviceId) {
         return res.status(403).json({ 
           success: false, 
-          message: "सुरक्षा कारणवश यह मोबाइल नंबर किसी अन्य डिवाइस पर एक्टिव है! एक नंबर से दूसरा डिवाइस नहीं चल सकता।" 
+          message: "सुरक्षा कारणवश यह मोबाइल नंबर किसी अन्य डिवाइस पर रजिस्टर्ड है! एक नंबर से दूसरा डिवाइस नहीं चल सकता।" 
         });
       }
     }
+
+    if (new Date() > new Date(user.planExpiry)) {
+      return res.status(403).json({ 
+        success: false, 
+        expired: true,
+        message: "आपका प्लान/ट्रायल समाप्त हो चुका है! आगे उपयोग करने के लिए कृपया सब्सक्रिप्शन प्लान खरीदें।" 
+      });
+    }
+
     res.json({ success: true, message: "Login Successful", user });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -77,7 +96,7 @@ app.get('/api/settings', async (req, res) => {
     if (!setting) {
       setting = new Setting({
         key: 'app_settings',
-        qrCodeUrl: '',
+        qrCodeUrl: '/qr.jpg',
         promoBannerUrl: '',
         plans: [
           { name: '1 Month Plan', price: '₹199', days: 30 },
@@ -92,7 +111,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-// Update Settings (Admin - QR, Promo Banner & Plans)
+// Update Settings (Admin)
 app.post('/api/admin/settings', async (req, res) => {
   const { qrCodeUrl, promoBannerUrl, plans } = req.body;
   try {
