@@ -36,8 +36,8 @@
 
     <!-- Top Tabs for Switching -->
     <div id="authTabs" class="toggle-container">
-        <button class="tab-btn active" onclick="switchTab('register')">नया रजिस्टर</button>
-        <button class="tab-btn" onclick="switchTab('login')">लॉगिन करें</button>
+        <button class="tab-btn active" onclick="switchTab('register', event)">नया रजिस्टर</button>
+        <button class="tab-btn" onclick="switchTab('login', event)">लॉगिन करें</button>
     </div>
 
     <!-- Register Form -->
@@ -116,12 +116,11 @@
         }
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, event) {
         const btns = document.querySelectorAll('.tab-btn');
         btns.forEach(b => b.classList.remove('active'));
 
         if(tab === 'register') {
-            document.واتसun = '';
             document.getElementById('registerSection').classList.add('active');
             document.getElementById('loginSection').classList.remove('active');
             event.target.classList.add('active');
