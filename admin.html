@@ -55,6 +55,18 @@
     </div>
 
     <script>
+        // Admin Password Protection
+        const ADMIN_PASSWORD = "Baiju2000"; 
+        
+        function checkAdminAuth() {
+            let enteredPass = prompt("कृपया Admin Password दर्ज करें:");
+            if (enteredPass !== ADMIN_PASSWORD) {
+                alert("गलत पासवर्ड! आपको वापस भेजा जा रहा है।");
+                window.location.href = "index.html";
+            }
+        }
+        checkAdminAuth();
+
         async function loadData() {
             const settingsRes = await fetch('/api/settings');
             const settingsData = await settingsRes.json();
@@ -105,7 +117,7 @@
             });
             const data = await res.json();
             if(data.success) {
-                alert("Settings & Promotion Banner updated successfully!");
+                alert("Settings updated successfully!");
                 loadData();
             } else {
                 alert("Error updating settings");

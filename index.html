@@ -123,21 +123,21 @@
         if(tab === 'register') {
             document.getElementById('registerSection').classList.add('active');
             document.getElementById('loginSection').classList.remove('active');
-            event.target.classList.add('active');
+            if(event && event.target) event.target.classList.add('active');
         } else {
             document.getElementById('registerSection').classList.remove('active');
             document.getElementById('loginSection').classList.add('active');
-            event.target.classList.add('active');
+            if(event && event.target) event.target.classList.add('active');
         }
     }
 
     async function registerUser() {
-        const name = document.getElementById('regName').value;
-        const mobile = document.getElementById('regMobile').value;
-        const password = document.getElementById('regPassword').value;
-        const email = document.getElementById('regEmail').value;
-        const district = document.getElementById('regDistrict').value;
-        const state = document.getElementById('regState').value;
+        const name = document.getElementById('regName').value.trim();
+        const mobile = document.getElementById('regMobile').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const district = document.getElementById('regDistrict').value.trim();
+        const state = document.getElementById('regState').value.trim();
 
         if(!name || !mobile || !password) {
             alert("कृपया नाम, मोबाइल नंबर और पासवर्ड भरें!");
@@ -163,13 +163,13 @@
                 alert(result.message);
             }
         } catch(e) {
-            alert("Connection Error!");
+            alert("सर्वर से कनेक्ट करने में समस्या हुई। कृपया पुनः प्रयास करें।");
         }
     }
 
     async function loginUser() {
-        const mobile = document.getElementById('logMobile').value;
-        const password = document.getElementById('logPassword').value;
+        const mobile = document.getElementById('logMobile').value.trim();
+        const password = document.getElementById('logPassword').value.trim();
 
         if(!mobile || !password) {
             alert("कृपया मोबाइल नंबर और पासवर्ड दर्ज करें!");
@@ -195,7 +195,7 @@
                 alert(result.message);
             }
         } catch(e) {
-            alert("Connection Error!");
+            alert("सर्वर से कनेक्ट करने में समस्या हुई। कृपया पुनः प्रयास करें।");
         }
     }
 

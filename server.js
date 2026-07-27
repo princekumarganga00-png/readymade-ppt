@@ -9,8 +9,8 @@ app.use(cors());
 
 app.use(express.static(__dirname));
 
-// Database Connection
-mongoose.connect('mongodb+srv://princekumarganga00_db_user:Prince_2008@cluster0.czgcm2j.mongodb.net/?appName=Cluster0', {
+// Database Connection (Updated with new password)
+mongoose.connect('mongodb+srv://princekumarganga00_db_user:XLrP1mDvRl8wx2iZ@cluster0.czgcm2j.mongodb.net/?appName=Cluster0', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log('Readymade PPT Database Connected Successfully!'))
@@ -58,7 +58,7 @@ app.post('/api/user/register', async (req, res) => {
 
     let existingUser = await User.findOne({ mobile });
     if (existingUser) {
-      return res.status(400).json({ success: false, message: "यह मोबाइल नंबर पहले से रजिस्टर्ड है! कृपया 'Already User' से लॉगिन करें।" });
+      return res.status(400).json({ success: false, message: "यह मोबाइल नंबर पहले से रजिस्टर्ड है! कृपया 'लॉगिन करें' का उपयोग करें।" });
     }
 
     let expiry = new Date();
