@@ -7,7 +7,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Static files (Jaise index.html) ko serve karne ke liye
 app.use(express.static(__dirname));
 
 // Database Connection
@@ -17,6 +16,7 @@ mongoose.connect('mongodb+srv://princekumarganga00_db_user:Prince_2008@cluster0.
 }).then(() => console.log('Readymade PPT Database Connected Successfully!'))
   .catch(err => console.log('Database Connection Error: ', err));
 
+// User Schema
 const UserSchema = new mongoose.Schema({
   name: String,
   mobile: { type: String, unique: true },
@@ -30,6 +30,16 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', UserSchema);
 
+// Settings Schema (QR Code, Plans & Promotion Banner)
+const SettingSchema = new mongoose.Schema({
+  key: { type: String, unique: true },
+  qrCodeUrl: String,
+  promoBannerUrl: String,
+  plans: Array
+});
+const Setting = mongoose.model('Setting', SettingSchema);
+
+// Login API
 app.post('/api/user/login', async (req, res) => {
   const { name, mobile, email, district, state, deviceId } = req.body;
   try {
@@ -55,6 +65,63 @@ app.post('/api/user/login', async (req, res) => {
       }
     }
     res.json({ success: true, message: "Login Successful", user });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Get Settings
+app.get('/api/settings', async (req, res) => {
+  try {
+    let setting = await Setting.findOne({ key: 'app_settings' });
+    if (!setting) {
+      setting = new Setting({
+        key: 'app_settings',
+        qrCodeUrl: '',
+        promoBannerUrl: '',
+        plans: [
+          { name: '1 Month Plan', price: '₹199', days: 30 },
+          { name: '1 Year Plan', price: '₹999', days: 365 }
+        ]
+      });
+      await setting.save();
+    }
+    res.json({ success: true, setting });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update Settings (Admin - QR, Promo Banner & Plans)
+app.post('/api/admin/settings', async (req, res) => {
+  const { qrCodeUrl, promoBannerUrl, plans } = req.body;
+  try {
+    let setting = await Setting.findOneAndUpdate(
+      { key: 'app_settings' },
+      { qrCodeUrl, promoBannerUrl, plans },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, message: "Settings updated successfully", setting });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Get all users for Admin
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const users = await User.find().sort({ _id: -1 });
+    res.json({ success: true, users });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Delete user by Admin
+app.delete('/api/admin/user/:id', async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "User deleted successfully" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
