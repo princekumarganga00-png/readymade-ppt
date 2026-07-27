@@ -6,8 +6,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Aapke MongoDB Atlas ka asli connection string
-mongoose.connect('mongodb+srv://princekumarganga00_db_user:KnYUPYRXEvQAmT0@cluster0.czgcm2j.mongodb.net/?appName=Cluster0', {
+// Aapke naye password (Prince_2008) ke sath connection string
+mongoose.connect('mongodb+srv://princekumarganga00_db_user:Prince_2008@cluster0.czgcm2j.mongodb.net/?appName=Cluster0', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log('Readymade PPT Database Connected Successfully!'))
